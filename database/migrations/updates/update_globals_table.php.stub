@@ -10,7 +10,9 @@ return new class extends Migration {
     public function up()
     {
         Schema::table($this->prefix('global_sets'), function (Blueprint $table) {
-            $table->jsonb('settings')->after('title')->nullable();
+            if(!Schema::hasColumn('global_sets', 'settings')) {
+                $table->jsonb('settings')->after('title')->nullable();
+            }
         });
 
         GlobalSetModel::all()
@@ -28,7 +30,9 @@ return new class extends Migration {
             });
 
         Schema::table($this->prefix('global_sets'), function (Blueprint $table) {
-            $table->dropColumn('localizations');
+            if(Schema::hasColumn('global_sets', 'localizations')) {
+                $table->dropColumn('localizations');
+            }
         });
     }
 

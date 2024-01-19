@@ -9,20 +9,57 @@ use Statamic\Eloquent\Database\BaseMigration as Migration;
 return new class extends Migration {
     public function up()
     {
-        Schema::table($this->prefix('assets_meta'), function (Blueprint $table) {
-            $table->string('container')->after('handle')->index();
-            $table->string('folder')->after('container')->index();
-            $table->string('basename')->after('folder')->index();
-            $table->string('filename')->after('basename')->index();
-            $table->char('extension', 10)->after('filename')->index();
-            $table->string('path')->after('extension')->index();
-            $table->jsonb('meta')->after('path')->nullable();
+        $hasColumns = [
+            'container' => Schema::hasColumn('assets_meta', 'container'),
+            'folder' => Schema::hasColumn('assets_meta', 'folder'),
+            'basename' => Schema::hasColumn('assets_meta', 'basename'),
+            'filename' => Schema::hasColumn('assets_meta', 'filename'),
+            'extension' => Schema::hasColumn('assets_meta', 'extension'),
+            'path' => Schema::hasColumn('assets_meta', 'path'),
+            'meta' => Schema::hasColumn('assets_meta', 'meta'),
+        ];
 
-            $table->index(['container', 'folder', 'basename']);
+        Schema::table($this->prefix('assets_meta'), function (Blueprint $table) use ($hasColumns) {
+            $index = [];
+
+            if(!$hasColumns['container']) {
+                $index[] = 'container';
+                $table->string('container')->after('handle')->index();
+            }
+
+            if(!$hasColumns['folder']) {
+                $index[] = 'folder';
+                $table->string('folder')->after('container')->index();
+            }
+
+            if(!$hasColumns['basename']) {
+                $index[] = 'basename';
+                $table->string('basename')->after('folder')->index();
+            }
+
+            if(!$hasColumns['filename']) {
+                $table->string('filename')->after('basename')->index();
+            }
+
+            if(!$hasColumns['extension']) {
+                $table->char('extension', 10)->after('filename')->index();
+            }
+
+            if(!$hasColumns['path']) {
+                $table->string('path')->after('extension')->index();
+            }
+
+            if(!$hasColumns['meta']) {
+                $table->jsonb('meta')->after('path')->nullable();
+            }
+
+            if(count($index) > 0) {
+                $table->index($index);
+            }
         });
 
         AssetModel::all()
-            ->each(function ($model) {
+            ->each(function ($model)  {
                 $path = Str::of($model->handle)->after('::')->replace('.meta/', '')->beforeLast('.yaml');
 
                 if ($path->startsWith('./')) {
@@ -40,7 +77,9 @@ return new class extends Migration {
             });
 
         Schema::table($this->prefix('assets_meta'), function (Blueprint $table) {
-            $table->dropColumn('handle');
+            if(Schema::hasColumn('assets_meta', 'handle')) {
+                $table->dropColumn('handle');
+            }
         });
     }
 

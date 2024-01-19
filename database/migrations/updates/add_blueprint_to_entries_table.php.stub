@@ -8,11 +8,13 @@ use Statamic\Facades\Entry;
 return new class extends Migration {
     public function up()
     {
-        Schema::table($this->prefix('entries'), function (Blueprint $table) {
-            $table->string('blueprint', 30)->nullable()->index()->after('collection');
-        });
+        if(!Schema::hasColumn('entries', 'blueprint')) {
+            Schema::table($this->prefix('entries'), function (Blueprint $table) {
+                $table->string('blueprint', 30)->nullable()->index()->after('collection');
+            });
 
-        Entry::all()->each->saveQuietly();
+            Entry::all()->each->saveQuietly();
+        }
     }
 
     public function down()
